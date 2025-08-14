@@ -1,0 +1,11 @@
+Model Information:
+* title:	Reeds low poly
+* source:	https://sketchfab.com/3d-models/reeds-low-poly-a8923e7b4fd44c2c9ba7f006fb952626
+* author:	daniel.2U (https://sketchfab.com/daniel.2U)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Reeds low poly" (https://sketchfab.com/3d-models/reeds-low-poly-a8923e7b4fd44c2c9ba7f006fb952626) by daniel.2U (https://sketchfab.com/daniel.2U) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
