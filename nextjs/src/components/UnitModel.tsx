@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useGLTF, useAnimations } from "@react-three/drei";
 import type { AnimationClip, Group } from "three";
-import { Box3, Vector3 } from "three";
+import { Box3, Vector3, Color } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { clone as skeletonClone } from "three/examples/jsm/utils/SkeletonUtils.js";
 
@@ -15,9 +15,10 @@ type UnitModelProps = React.ComponentProps<"group"> & {
     fitXZSize?: number;
     centerXZ?: boolean;
     frustumCulled?: boolean;
+    tintColor?: string;
 };
 
-export default function UnitModel({ modelUrl, animationUrl, playClip, scaleFactor = 0.01, fitXZSize, centerXZ = true, frustumCulled = true, ...groupProps }: UnitModelProps) {
+export default function UnitModel({ modelUrl, animationUrl, playClip, scaleFactor = 0.01, fitXZSize, centerXZ = true, frustumCulled = true, tintColor, ...groupProps }: UnitModelProps) {
     const group = useRef<Group>(null);
     const base = useGLTF(modelUrl);
     const [extraAnimations, setExtraAnimations] = useState<AnimationClip[]>([]);
@@ -94,6 +95,37 @@ export default function UnitModel({ modelUrl, animationUrl, playClip, scaleFacto
     }, [base.scene, fitXZSize, scaleFactor, centerXZ]);
 
     const scaleToApply = computedScale ?? scaleFactor;
+
+    // Apply tint color to materials if provided and remove reflections for performance
+    useEffect(() => {
+        const applyTint = (object: any) => {
+            if (object.material) {
+                // Remove reflections for better performance
+                if (object.material.roughness !== undefined) {
+                    object.material.roughness = 1.0; // Completely matte
+                }
+                if (object.material.metalness !== undefined) {
+                    object.material.metalness = 0.0; // No metallic reflection
+                }
+                if (object.material.envMap !== undefined) {
+                    object.material.envMap = null; // Remove environment mapping
+                }
+
+                // Apply tint color if provided
+                if (tintColor && object.material.color) {
+                    const tempColor = new Color();
+                    tempColor.setStyle(tintColor);
+                    object.material.color = tempColor;
+                }
+            }
+            // Recursively apply to children
+            if (object.children) {
+                object.children.forEach(applyTint);
+            }
+        };
+
+        applyTint(clonedScene);
+    }, [clonedScene, tintColor]);
 
     return (
         <group {...groupProps} ref={group}>

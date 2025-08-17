@@ -59,6 +59,7 @@ export type UnitInstance = {
   footprint: Coordinate[]; // absolute offsets relative to origin
   currentHealth?: number;
   hasTakenDamage?: boolean;
+  hasMoved?: boolean; // Track if unit has moved this turn
 };
 
 export type BoardDefinition = {

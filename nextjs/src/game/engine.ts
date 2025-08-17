@@ -1,4 +1,7 @@
-import { produce } from "immer";
+import { produce, enableMapSet } from "immer";
+
+// Enable the MapSet plugin to handle Set/Map in Immer
+enableMapSet();
 import {
   BoardDefinition,
   Coordinate,
@@ -30,6 +33,7 @@ export function createUnitInstance(def: UnitDefinition, ownerId: PlayerId, id: U
     footprint,
     currentHealth: def.stats?.maxHealth,
     hasTakenDamage: false,
+    hasMoved: false,
   };
 }
 
@@ -130,6 +134,19 @@ function unitRangeFromStats(_unit: UnitInstance, _defId: string, _key: "moveRang
   return defaultValue;
 }
 
+// Basic attack targets: any enemy unit within Manhattan distance of attack range
+export function calculateAttackTargets(state: GameState, unit: UnitInstance): UnitInstance[] {
+  const range = unitRange(unit, "attack");
+  const targets: UnitInstance[] = [];
+  for (const targetId of state.unitOrder) {
+    const other = state.units[targetId];
+    if (!other || other.ownerId === unit.ownerId) continue;
+    const distance = manhattanDistance(unit.position, other.position);
+    if (distance <= range) targets.push(other);
+  }
+  return targets;
+}
+
 export function applyDamage(state: GameState, unitId: UnitId, amount: number): void {
   const unit = state.units[unitId];
   if (!unit) return;
@@ -169,10 +186,15 @@ export function step(state: GameState, action: GameAction): GameState {
       case "move": {
         const unit = draft.units[action.unitId];
         if (!unit) return;
+        // Enforce turn ownership: only current player's unit can move
+        if (unit.ownerId !== draft.turn.currentPlayerId) return;
         const newPos = action.to;
+        // Can't move if unit has already moved this turn
+        if (unit.hasMoved) return;
         const temp = { ...unit, position: newPos };
         if (canPlaceUnit(draft, temp, newPos)) {
           unit.position = newPos;
+          unit.hasMoved = true;
         }
         break;
       }
@@ -181,7 +203,7 @@ export function step(state: GameState, action: GameAction): GameState {
         const target = draft.units[action.targetId];
         if (!attacker || !target) return;
         const distance = manhattanDistance(attacker.position, target.position);
-        const range = 1; // default attack range
+        const range = unitRange(attacker, "attack");
         if (distance <= range) {
           const damage = 1; // default attack damage
           applyDamage(draft, target.id, damage);
@@ -194,6 +216,11 @@ export function step(state: GameState, action: GameAction): GameState {
         const nextIdx = (currentIdx + 1) % order.length;
         draft.turn.currentPlayerId = order[nextIdx];
         draft.turn.turnNumber += nextIdx === 0 ? 1 : 0;
+        
+        // Reset all units' moved flags for the next player's turn
+        Object.values(draft.units).forEach(unit => {
+          unit.hasMoved = false;
+        });
         break;
       }
     }
